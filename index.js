@@ -1,5 +1,8 @@
 const express = require("express")
 const app = express()
+const fs = require("fs")
+require('dotenv').config();
+
 
 const { Client, GatewayIntentBits, messageLink } = require ('discord.js');
 const client = new Client({ intents: 
@@ -7,14 +10,27 @@ const client = new Client({ intents:
      GatewayIntentBits.GuildMessages ,
      GatewayIntentBits.GuildIntegrations,
      GatewayIntentBits.MessageContent,
-     GatewayIntentBits.GuildVoiceStates
-     ] 
-});
-const token = "MTE5NjQ1NzY2OTkxODIwMzkxNQ.Go2bMQ.egz89Gwvr1dEJC-MoPMLbp_imhamIFGL6gBOdA"
-const { handleplaymusic } = require("./commands/play")
-const { handlestopmusic } = require("./commands/stop")
+     GatewayIntentBits.GuildVoiceStates 
+     ]
+}); 
+const {AudioPlayerStatus,createAudioPlayer  } = require('@discordjs/voice');
+const token = process.env.DISCORD_TOKEN
+
+const { handleplaymusic ,
+     handlestopmusic , 
+    handlepausemusic, 
+    handleResumemusic,
+    handleQueue} = require("./commands/ppr");
+const { error } = require("console");
+
 const prefix = '!'
+ 
+client.on("messageCreate", handleplaymusic)
+client.on("messageCreate", handlestopmusic) 
+client.on("messageCreate", handlepausemusic)
+client.on("messageCreate", handleResumemusic)
 
-client.on("messageCreate", handleplaymusic , handlestopmusic)
 
-client.login(token)
+
+
+client.login(token) 
