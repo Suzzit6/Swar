@@ -1,7 +1,7 @@
 const express = require("express")
 const app = express()
 
-const { Client, GatewayIntentBits, messageLink, Message } = require ('discord.js');
+const { Client, GatewayIntentBits, messageLink, Message , EmbedBuilder  } = require ('discord.js');
 const client = new Client({ intents: 
     [ GatewayIntentBits.Guilds ,
      GatewayIntentBits.GuildMessages ,
@@ -10,7 +10,7 @@ const client = new Client({ intents:
      GatewayIntentBits.GuildVoiceStates,
      ] 
 });
-const { joinVoiceChannel,createAudioPlayer ,createAudioResource ,AudioPlayerStatus  } = require('@discordjs/voice');
+const { joinVoiceChannel,createAudioPlayer ,createAudioResource ,AudioPlayerStatus , getVoiceConnection } = require('@discordjs/voice');
 
 const ytsr = require('ytsr');
 const ytdl = require('ytdl-core');
@@ -20,10 +20,10 @@ let connections = new Map()
 let streams = new Map()
 let players = new Map()
 
-const prefix = '!'
+const prefix = '='
 
-let guildId;
 let connection;
+let subscription;
 let currentMessage;
 let serverId;
 let queue;
@@ -66,15 +66,11 @@ async function handleplaymusic(message){
     Videourl = searchResults.items[0].url
     songName = searchResults.items[0].title
     queue = queues.get(serverId)
-    console.log(queue)
-    console.log("before creating")
     if(!queue){
         queue = []
         queues.set(serverId,queue)
     }
      queue.push(searchResults.items[0])
-     console.log("after creating")
-     console.log(queue)
      
  
     } catch (error) {
@@ -92,7 +88,7 @@ async function handleplaymusic(message){
      
      const dispatcher =  player.play(resource)
      
-     connection.subscribe(player); 
+     subscription =  connection.subscribe(player); 
      
      player.on(AudioPlayerStatus.Idle, async ()=>{
         console.log("player Idle")
@@ -114,18 +110,12 @@ async function handleQueue(currentMessage){
         let Videourl;
         let songName;
         let queue = queues.get(serverId)
-        console.log(queue)
-        console.log("Unshifted this is ")
         try {
            
        const nextSong = await queue.shift()
-       console.log(`nextSong : ${nextSong}`)
-       console.log(queue)
-       console.log("shifted this is ")
 
        Videourl = nextSong.url
        songName = nextSong.title
-       console.log( `nextSong.url  : ${nextSong.url } \n nextSong.title  : ${nextSong.title} `)
     
         } catch (error) {
          console.log(error)
@@ -136,9 +126,9 @@ async function handleQueue(currentMessage){
             let stream = ytdl(Videourl, { filter: "audioonly",  highWaterMark: 1<<25  })
             const resource = createAudioResource(stream)
             const dispatcher =  player.play(resource)
-            connection = connections.get(serverId);
+            connection = getVoiceConnection(serverId)
 
-            connection.subscribe(player);
+            subscription = connection.subscribe(player);
 
             } catch (error) {
                 console.log(error)
@@ -147,19 +137,47 @@ async function handleQueue(currentMessage){
                  
             }
             return currentMessage.channel.send(`Now Playing ${songName}`)
+            
            }
+           
 
 async function handlestopmusic(message){
     
     let player = players.get(serverId)
+   try {
     const content = message.content.toLowerCase()
     if(content.startsWith(`${prefix}stop`)){
       if(player){
-        player.stop()
+        subscription.unsubscribe()
       }
       return message.reply("Player Stopped")
       }
+   } catch (error) {
+    console.log(`error in handlestop ${error}`)
+    return message.reply("An Unknown error occured")
+   } 
  }
+ 
+async function handleskipmusic(message){
+    const Djrole = message.guild.roles.cache.find(role => role.name == "Mewsic DJ")
+
+    const content = message.content.toLowerCase()
+    if(content.startsWith(`${prefix}skip`)){
+
+    if (!message.member.roles.cache.has(Djrole.id)) return message.reply("The one with the DJ role can only skip Songs")
+        
+        let player = players.get(serverId)
+        const content = message.content.toLowerCase()
+        if(content.startsWith(`${prefix}skip`)){
+          if(player){
+            player.stop()
+          }
+          return message.reply("Song Skipped")
+          }
+        }
+    } 
+    
+
 async function handlepausemusic(message){
     let player = players.get(serverId)
 
@@ -169,7 +187,6 @@ async function handlepausemusic(message){
             player.pause()
           }
           return message.reply("Player Paused")
- 
       }
  }
 async function handleResumemusic(message){
@@ -178,7 +195,7 @@ async function handleResumemusic(message){
     const content = message.content.toLowerCase()
     if(content.startsWith(`${prefix}resume`)){
         if(player){
-            player.unpause() 
+            player.unpause()
           }
        
  
@@ -186,10 +203,83 @@ async function handleResumemusic(message){
       }
  }
 
+ async function handleHelp(message){
+
+    const content = message.content.toLowerCase()
+    if(content.startsWith(`${prefix}help`)){
+    const HelpInEmbed = new EmbedBuilder()
+        .setTitle("Welcome To Mewsic Bot !")
+        .setDescription(`Dj role has been created
+        Note:Don't Mess with this role or don't Change name of this role !!`)
+        .setThumbnail('https://i.imgur.com/D88uzou.jpg')
+        .addFields(
+            { name: `${prefix}play Song_name`,value:`Plays the Song or queues the song if already playing` },
+            { name: `${prefix}pause `,value:` To pause the current song` },
+            { name: `${prefix}resume `,value:`To resume the currently paused music` },
+            { name: `${prefix}skip `,value:`skips to other songs in the queue` },
+            { name: `${prefix}stop `,value:`Destroys the Queue and stops the player completely` },
+            { name: `${prefix}queue `,value:`Lists the total number of songs in the queue` },
+            { name: `${prefix}donate `,value:`Donate to Maintain the quality and hosting service of this bot` },
+            { name: `${prefix}invite `,value:`Replies with Bot Official invite link` },
+            { name: `${prefix}server `,value:`Replies with Bot's Official Server invite link` },
+        )
+        .setFooter({ text: `Created By: @suzzit911 Youtube: @c4Shots`});
+      return message.reply({embeds:[HelpInEmbed]})
+      }
+ }
+ async function handleSeeQueue(message){
+    serverId = currentMessage.guild.id;
+    try {
+        let queue = queues.get(serverId)
+
+        const content = message.content.toLowerCase()
+        if(content.startsWith(`${prefix}queue`)){
+            const titles = queue.filter(q => q.title ).map((q,index)=>`${index + 1}. ${q.title}`)
+            const queue_songs = titles.join('\n')
+            const QueueInEmbed = new EmbedBuilder()
+            .setTitle("Queues")
+            .setDescription(queue_songs) 
+            console.log(QueueInEmbed)
+            return message.reply ({ embeds: [QueueInEmbed] }) 
+            }
+    } catch (error) {
+        return message.reply("Queue Empty")
+    }
+ }  
+ async function handleDonate(message){
+
+    const content = message.content.toLowerCase()
+    if(content.startsWith(`${prefix}donate`)){
+        return message.reply(`Donate to Improve this Bot Quality and hosting service :) - https://www.buymeacoffee.com/c4shots `)
+        }
+ }
+ async function handleInviteBot(message){
+
+    const content = message.content.toLowerCase()
+    if(content.startsWith(`${prefix}invite`)){
+        return message.reply(`Bot Invite Link : https://shorturl.at/adoU7`)
+        }
+    
+ }
+ async function handleInviteAdmin(message){
+
+    const content = message.content.toLowerCase()
+    if(content.startsWith(`${prefix}server`)){
+        return message.reply(`Server Invite Link : https://discord.gg/vnw3BtaZJm`)
+        }
+ }
+
+
 module.exports = { 
     handleplaymusic ,
     handlestopmusic ,
+    handleskipmusic,
     handlepausemusic, 
     handleResumemusic,
-    handleQueue
-}
+    handleQueue,
+    handleHelp,
+    handleSeeQueue,
+    handleDonate,
+    handleInviteBot,
+    handleInviteAdmin 
+} 

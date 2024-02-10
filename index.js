@@ -10,23 +10,55 @@ const client = new Client({ intents:
      GatewayIntentBits.GuildMessages ,
      GatewayIntentBits.GuildIntegrations,
      GatewayIntentBits.MessageContent,
-     GatewayIntentBits.GuildVoiceStates 
+     GatewayIntentBits.GuildVoiceStates
      ]
 }); 
 const token = process.env.DISCORD_TOKEN
 
 const { handleplaymusic ,
-     handlestopmusic , 
+     handlestopmusic ,
+     handleskipmusic, 
     handlepausemusic, 
     handleResumemusic,
+    handleHelp,
+    handleSeeQueue,
+    handleDonate,
+    handleInviteBot,
+    handleInviteAdmin
      } = require("./commands/ppr");
+const { channel } = require("diagnostics_channel");
 
-const prefix = '!'
- 
+const prefix = '='
+
+client.on('guildCreate', async guild => {
+     try {
+          const Djrole = guild.roles.cache.find(role => role.name == "Mewsic DJ")
+          if(!Djrole){
+               await guild.roles.create({
+                    name: 'Mewsic DJ',
+                    reason: "Don't Mess with this role or don't Change name etc of this role !!"
+               })
+          }
+     } catch (error) {
+         console.error('Error creating role:', error)
+     }
+ })
+
+//  client.on('guildDelete', async guild => {
+//      const Djrole = guild.roles.cache.find(role => role.name == "Mewsic DJ")
+//      await guild.roles.delete(Djrole.id)
+//  });
+
 client.on("messageCreate", handleplaymusic)
-client.on("messageCreate", handlestopmusic) 
-client.on("messageCreate", handlepausemusic)
+client.on("messageCreate", handlestopmusic) // for those who wondering i shouldve wrote all the handle commmands on one client.on, i tried that way but it didnt worked.
+client.on("messageCreate", handleskipmusic) 
+client.on("messageCreate", handlepausemusic) 
 client.on("messageCreate", handleResumemusic)
+client.on("messageCreate", handleHelp)
+client.on("messageCreate", handleSeeQueue)
+client.on("messageCreate", handleDonate)
+client.on("messageCreate", handleInviteBot)
+client.on("messageCreate", handleInviteAdmin)
 
 
 client.login(token) 
