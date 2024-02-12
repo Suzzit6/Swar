@@ -5,6 +5,7 @@ require('dotenv').config();
 
 
 const { Client, GatewayIntentBits, messageLink } = require ('discord.js');
+
 const client = new Client({ intents: 
     [ GatewayIntentBits.Guilds ,
      GatewayIntentBits.GuildMessages ,
@@ -43,11 +44,7 @@ client.on('guildCreate', async guild => {
          console.error('Error creating role:', error)
      }
  })
-
-//  client.on('guildDelete', async guild => {
-//      const Djrole = guild.roles.cache.find(role => role.name == "Mewsic DJ")
-//      await guild.roles.delete(Djrole.id)
-//  });
+ 
 
 client.on("messageCreate", handleplaymusic)
 client.on("messageCreate", handlestopmusic) // for those who wondering i shouldve wrote all the handle commmands on one client.on, i tried that way but it didnt worked.

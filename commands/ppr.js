@@ -10,7 +10,7 @@ const client = new Client({ intents:
      GatewayIntentBits.GuildVoiceStates,
      ] 
 });
-const { joinVoiceChannel,createAudioPlayer ,createAudioResource ,AudioPlayerStatus , getVoiceConnection } = require('@discordjs/voice');
+const { joinVoiceChannel,createAudioPlayer ,createAudioResource ,AudioPlayerStatus , getVoiceConnection ,VoiceConnectionStatus } = require('@discordjs/voice');
 
 const ytsr = require('ytsr');
 const ytdl = require('ytdl-core');
@@ -53,6 +53,24 @@ async function handleplaymusic(message){
         })
         connections.set(serverId,connection)
      }
+     connection.on("stateChange", (oldState,newState)=>{
+        console.log(`Connection transitioned from ${oldState.status} to ${newState.status}`);
+        if(newState.status === 'disconnected'){
+            // message.guild.me.voice.channel.leave();
+            console.log('Bot has left the voice channel!');
+        } 
+        if(newState.status === 'disconnected' && oldState.status === 'disconnected'){
+            // message.guild.me.voice.channel.leave();
+            
+            
+            connection = joinVoiceChannel({
+            channelId:voicechannel.id,
+            guildId:voicechannel.guild.id,
+            adapterCreator: voicechannel.guild.voiceAdapterCreator
+        })
+        connections.set(serverId,connection)
+        } 
+     })  
      const options = {
            pages: 1,
          }
@@ -94,6 +112,7 @@ async function handleplaymusic(message){
         console.log("player Idle")
                await handleQueue(currentMessage)
             })
+           
      } catch (error) {
          console.log(error)
          return message.reply(`Error Playing the Song`)
