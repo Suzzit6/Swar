@@ -2,15 +2,8 @@ const express = require("express")
 const app = express()
 const fs = require("fs")
 require('dotenv').config();
-const port = 4546;
-
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
-
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+const port = 4576;
+ 
 
 const { Client, GatewayIntentBits, messageLink } = require ('discord.js');
 
