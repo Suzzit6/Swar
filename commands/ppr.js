@@ -39,6 +39,7 @@ async function handleplaymusic(message){
     const content = message.content.toLowerCase() + " song"
 
     if(content.startsWith(`${prefix}play`)){
+        
      const name = content.split(`${prefix}play`)[1].trim()
      const voicechannel = message.member.voice.channel 
      if(!voicechannel){
@@ -242,7 +243,7 @@ async function handleResumemusic(message){
             { name: `${prefix}invite `,value:`Replies with Bot Official invite link` },
             { name: `${prefix}server `,value:`Replies with Bot's Official Server invite link` },
         )
-        .setFooter({ text: `Created By: @suzzit911 Youtube: @c4Shots`});
+        .setFooter({ text: `Created By: @suzzit911`});
       return message.reply({embeds:[HelpInEmbed]})
       }
  }
